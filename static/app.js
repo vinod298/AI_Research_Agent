@@ -22,6 +22,11 @@ class App {
         let customUrl = localStorage.getItem('api_base_url');
         if (customUrl) {
             customUrl = customUrl.trim().replace(/\/+$/, '');
+            if (!customUrl.startsWith('http://') && !customUrl.startsWith('https://')) {
+                console.warn('Invalid api_base_url in localStorage, resetting to default:', customUrl);
+                localStorage.removeItem('api_base_url');
+                return '/api/v1';
+            }
             if (!customUrl.endsWith('/api/v1')) {
                 customUrl = `${customUrl}/api/v1`;
             }
@@ -33,13 +38,17 @@ class App {
     configureApiUrl() {
         const current = localStorage.getItem('api_base_url') || 'http://localhost:8000';
         const url = prompt(
-            "Enter your live Backend API URL:\n\nExamples:\n- Cloudflare Tunnel: https://your-name.trycloudflare.com\n- Hugging Face: https://your-space.hf.space\n- Render: https://your-app.onrender.com\n- Local: http://localhost:8000",
+            "Enter your live Backend API Server URL:\n\nExamples:\n- Local Server: http://localhost:8000\n- Cloudflare Tunnel: https://xyz.trycloudflare.com\n- Hugging Face: https://your-space.hf.space\n\n(Do NOT paste your API keys here!)",
             current
         );
 
         if (url !== null) {
-            const cleanUrl = url.trim().replace(/\/+$/, '');
+            let cleanUrl = url.trim().replace(/\/+$/, '');
             if (cleanUrl) {
+                if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+                    alert("⚠️ Invalid URL Format!\n\nPlease enter a full URL starting with http:// or https://\n(e.g., http://localhost:8000 or https://your-name.trycloudflare.com)");
+                    return;
+                }
                 localStorage.setItem('api_base_url', cleanUrl);
                 alert(`Backend API URL updated to:\n${cleanUrl}\n\nTesting connection now...`);
             } else {
@@ -49,6 +58,7 @@ class App {
             this.refreshData();
         }
     }
+
 
     async safeJson(res) {
         const text = await res.text();
