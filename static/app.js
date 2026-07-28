@@ -2,7 +2,7 @@
  * Enterprise AI Research & Knowledge Assistant - Frontend App Controller
  */
 
-const API_BASE = '/api/v1';
+const API_BASE = window.API_BASE_URL || localStorage.getItem('api_base_url') || '/api/v1';
 
 class App {
     constructor() {

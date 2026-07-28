@@ -1,5 +1,8 @@
-# Cloudflare Pages Proxy Rule
-# Redirects all frontend /api/* requests to your actual API backend URL
-# Replace YOUR-BACKEND-URL.com with your live backend domain or Cloudflare Tunnel URL
+# Cloudflare Pages Redirect Rules
+# Note: Cloudflare requires HTTP status 307 (Temporary Redirect) for external target URLs to preserve POST/PUT request bodies.
 
-/api/*  https://YOUR-BACKEND-URL.com/api/:splat  200
+# To route API calls to an external backend, replace your-backend.hf.space with your backend URL:
+# /api/*  https://your-backend.hf.space/api/:splat  307
+
+# Single Page Application (SPA) Client Routing Fallback
+/*  /index.html  200
