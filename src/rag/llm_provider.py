@@ -97,25 +97,29 @@ class OpenAIProvider(BaseLLMProvider):
             logger.warning("OpenAI API key missing. Falling back to Mock LLM provider.")
             return await MockLLMProvider().generate_response(prompt, system_prompt, temperature)
 
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            res = await client.post(
-                "https://api.openai.com/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {settings.OPENAI_API_KEY}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "model": settings.OPENAI_MODEL,
-                    "messages": [
-                        {"role": "system", "content": system_prompt or "You are an AI research assistant."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    "temperature": temperature
-                }
-            )
-            res.raise_for_status()
-            data = res.json()
-            return data["choices"][0]["message"]["content"]
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                res = await client.post(
+                    "https://api.openai.com/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {settings.OPENAI_API_KEY}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": settings.OPENAI_MODEL,
+                        "messages": [
+                            {"role": "system", "content": system_prompt or "You are an AI research assistant."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        "temperature": temperature
+                    }
+                )
+                res.raise_for_status()
+                data = res.json()
+                return data["choices"][0]["message"]["content"]
+        except Exception as e:
+            logger.warning(f"OpenAI API request failed ({e}). Falling back to Mock LLM provider.")
+            return await MockLLMProvider().generate_response(prompt, system_prompt, temperature)
 
 
 class AnthropicProvider(BaseLLMProvider):
@@ -129,25 +133,29 @@ class AnthropicProvider(BaseLLMProvider):
             logger.warning("Anthropic API key missing. Falling back to Mock LLM provider.")
             return await MockLLMProvider().generate_response(prompt, system_prompt, temperature)
 
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            res = await client.post(
-                "https://api.anthropic.com/v1/messages",
-                headers={
-                    "x-api-key": settings.ANTHROPIC_API_KEY,
-                    "anthropic-version": "2023-06-01",
-                    "content-type": "application/json"
-                },
-                json={
-                    "model": settings.ANTHROPIC_MODEL,
-                    "system": system_prompt or "You are an AI research assistant.",
-                    "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": 2048,
-                    "temperature": temperature
-                }
-            )
-            res.raise_for_status()
-            data = res.json()
-            return data["content"][0]["text"]
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                res = await client.post(
+                    "https://api.anthropic.com/v1/messages",
+                    headers={
+                        "x-api-key": settings.ANTHROPIC_API_KEY,
+                        "anthropic-version": "2023-06-01",
+                        "content-type": "application/json"
+                    },
+                    json={
+                        "model": settings.ANTHROPIC_MODEL,
+                        "system": system_prompt or "You are an AI research assistant.",
+                        "messages": [{"role": "user", "content": prompt}],
+                        "max_tokens": 2048,
+                        "temperature": temperature
+                    }
+                )
+                res.raise_for_status()
+                data = res.json()
+                return data["content"][0]["text"]
+        except Exception as e:
+            logger.warning(f"Anthropic API request failed ({e}). Falling back to Mock LLM provider.")
+            return await MockLLMProvider().generate_response(prompt, system_prompt, temperature)
 
 
 class GeminiProvider(BaseLLMProvider):
@@ -161,19 +169,30 @@ class GeminiProvider(BaseLLMProvider):
             logger.warning("Gemini API key missing. Falling back to Mock LLM provider.")
             return await MockLLMProvider().generate_response(prompt, system_prompt, temperature)
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.GEMINI_MODEL}:generateContent?key={settings.GEMINI_API_KEY}"
+        models_to_try = [settings.GEMINI_MODEL, "gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"]
+        models_to_try = list(dict.fromkeys([m for m in models_to_try if m]))
+
         async with httpx.AsyncClient(timeout=60.0) as client:
-            res = await client.post(
-                url,
-                headers={"Content-Type": "application/json"},
-                json={
-                    "contents": [{"parts": [{"text": f"{system_prompt}\n\n{prompt}"}]}],
-                    "generationConfig": {"temperature": temperature}
-                }
-            )
-            res.raise_for_status()
-            data = res.json()
-            return data["candidates"][0]["content"]["parts"][0]["text"]
+            for model_name in models_to_try:
+                try:
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={settings.GEMINI_API_KEY}"
+                    res = await client.post(
+                        url,
+                        headers={"Content-Type": "application/json"},
+                        json={
+                            "contents": [{"parts": [{"text": f"{system_prompt}\n\n{prompt}"}]}],
+                            "generationConfig": {"temperature": temperature}
+                        }
+                    )
+                    res.raise_for_status()
+                    data = res.json()
+                    return data["candidates"][0]["content"]["parts"][0]["text"]
+                except Exception as e:
+                    logger.warning(f"Gemini API model '{model_name}' failed ({e}). Trying next model...")
+
+        logger.warning("All Gemini model endpoints failed. Falling back to Mock LLM provider.")
+        return await MockLLMProvider().generate_response(prompt, system_prompt, temperature)
+
 
 
 class OllamaProvider(BaseLLMProvider):
