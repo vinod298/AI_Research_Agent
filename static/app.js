@@ -49,8 +49,12 @@ class App {
                     alert("⚠️ Invalid URL Format!\n\nPlease enter a full URL starting with http:// or https://\n(e.g., http://localhost:8000 or https://your-name.trycloudflare.com)");
                     return;
                 }
+                if (cleanUrl.includes('.workers.dev') || cleanUrl.includes('.pages.dev')) {
+                    alert("⚠️ Notice:\n\n'" + cleanUrl + "' is a Cloudflare Frontend URL, NOT your Python API Server!\n\nYour Backend API Server should be:\n- Local Server: http://localhost:8000\n- Cloudflare Tunnel: https://xyz.trycloudflare.com\n- Hugging Face / Render URL");
+                }
                 localStorage.setItem('api_base_url', cleanUrl);
                 alert(`Backend API URL updated to:\n${cleanUrl}\n\nTesting connection now...`);
+
             } else {
                 localStorage.removeItem('api_base_url');
                 alert("Reset to default relative API (/api/v1)");
