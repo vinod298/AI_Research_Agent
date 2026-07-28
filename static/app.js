@@ -22,8 +22,8 @@ class App {
         let customUrl = localStorage.getItem('api_base_url');
         if (customUrl) {
             customUrl = customUrl.trim().replace(/\/+$/, '');
-            if (!customUrl.startsWith('http://') && !customUrl.startsWith('https://')) {
-                console.warn('Invalid api_base_url in localStorage, resetting to default:', customUrl);
+            if (customUrl.includes('.workers.dev') || customUrl.includes('.pages.dev') || (!customUrl.startsWith('http://') && !customUrl.startsWith('https://'))) {
+                console.warn('Clearing invalid frontend URL from api_base_url in localStorage:', customUrl);
                 localStorage.removeItem('api_base_url');
                 return '/api/v1';
             }
@@ -34,6 +34,7 @@ class App {
         }
         return window.API_BASE_URL || '/api/v1';
     }
+
 
     configureApiUrl() {
         const current = localStorage.getItem('api_base_url') || 'http://localhost:8000';
