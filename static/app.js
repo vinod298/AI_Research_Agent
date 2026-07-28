@@ -123,26 +123,35 @@ class App {
         }
     }
 
+    formatErrorDetail(detail) {
+        if (Array.isArray(detail)) {
+            return detail.map(d => `• ${d.loc ? d.loc.filter(x => x !== 'body').join('.') : ''}: ${d.msg}`).join('\n');
+        }
+        if (typeof detail === 'object' && detail !== null) {
+            return JSON.stringify(detail);
+        }
+        return detail || '';
+    }
+
     async handleLogin(event) {
         event.preventDefault();
-        const usernameInput = document.getElementById('login-username').value;
+        const usernameInput = document.getElementById('login-username').value.trim();
         const passwordInput = document.getElementById('login-password').value;
-
-        const bodyData = new URLSearchParams();
-        bodyData.append('username', usernameInput);
-        bodyData.append('password', passwordInput);
 
         try {
             const res = await fetch(`${this.getApiBaseUrl()}/auth/login`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: bodyData
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username_or_email: usernameInput,
+                    password: passwordInput
+                })
             });
 
             const data = await this.safeJson(res);
 
             if (!res.ok) {
-                alert(`Login Failed: ${data.detail || 'Invalid credentials'}`);
+                alert(`Login Failed:\n${this.formatErrorDetail(data.detail) || 'Invalid credentials'}`);
                 return;
             }
 
@@ -161,9 +170,9 @@ class App {
 
     async handleRegister(event) {
         event.preventDefault();
-        const fullname = document.getElementById('reg-fullname').value;
-        const email = document.getElementById('reg-email').value;
-        const username = document.getElementById('reg-username').value;
+        const fullname = document.getElementById('reg-fullname').value.trim();
+        const email = document.getElementById('reg-email').value.trim();
+        const username = document.getElementById('reg-username').value.trim();
         const password = document.getElementById('reg-password').value;
 
         try {
@@ -171,17 +180,18 @@ class App {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    full_name: fullname,
+                    full_name: fullname || null,
                     email: email,
                     username: username,
-                    password: password
+                    password: password,
+                    role: "researcher"
                 })
             });
 
             const data = await this.safeJson(res);
 
             if (!res.ok) {
-                alert(`Registration Failed: ${data.detail || 'Registration error'}`);
+                alert(`Registration Failed:\n${this.formatErrorDetail(data.detail) || 'Registration error'}`);
                 return;
             }
 
@@ -193,6 +203,7 @@ class App {
             alert(`Register error: ${e.message}`);
         }
     }
+
 
     continueAsGuest() {
         this.token = null;
