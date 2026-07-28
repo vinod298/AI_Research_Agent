@@ -20,6 +20,28 @@ class App {
         this.refreshData();
     }
 
+    async safeJson(res) {
+        const text = await res.text();
+        if (!text || !text.trim()) return {};
+        try {
+            return JSON.parse(text);
+        } catch (e) {
+            if (res.status === 401) {
+                this.token = null;
+                localStorage.removeItem('jwt_token');
+                this.checkAuthStatus();
+                throw new Error('Authentication required. Please log in or register first.');
+            }
+            if (res.status === 404) {
+                throw new Error(`API endpoint not found (404). Ensure your backend API server is running.`);
+            }
+            if (res.status >= 500) {
+                throw new Error(`Backend server error (${res.status}). Please check your server logs.`);
+            }
+            throw new Error(`Invalid server response (${res.status}): ${text.substring(0, 100)}`);
+        }
+    }
+
     checkAuthStatus() {
         const modal = document.getElementById('auth-modal');
         const badge = document.getElementById('user-badge');
@@ -68,13 +90,13 @@ class App {
                 body: bodyData
             });
 
+            const data = await this.safeJson(res);
+
             if (!res.ok) {
-                const err = await res.json();
-                alert(`Login Failed: ${err.detail || 'Invalid credentials'}`);
+                alert(`Login Failed: ${data.detail || 'Invalid credentials'}`);
                 return;
             }
 
-            const data = await res.json();
             this.token = data.access_token;
             this.username = usernameInput;
 
@@ -107,14 +129,14 @@ class App {
                 })
             });
 
+            const data = await this.safeJson(res);
+
             if (!res.ok) {
-                const err = await res.json();
-                alert(`Registration Failed: ${err.detail || 'Registration error'}`);
+                alert(`Registration Failed: ${data.detail || 'Registration error'}`);
                 return;
             }
 
             alert('Account created successfully! Logging you in...');
-            // Auto login after registration
             document.getElementById('login-username').value = username;
             document.getElementById('login-password').value = password;
             this.handleLogin(event);
@@ -210,6 +232,12 @@ class App {
     }
 
     async uploadFiles(files) {
+        if (!this.token) {
+            alert('Authentication required: Please log in or register before uploading documents.');
+            this.checkAuthStatus();
+            return;
+        }
+
         for (let file of files) {
             const formData = new FormData();
             formData.append('file', file);
@@ -220,13 +248,15 @@ class App {
                     headers: this.getAuthHeaders(),
                     body: formData
                 });
+
+                const data = await this.safeJson(res);
+
                 if (!res.ok) {
-                    const err = await res.json();
-                    alert(`Upload error: ${err.detail}`);
+                    alert(`Upload error (${res.status}): ${data.detail || data.message || 'File upload failed'}`);
                     continue;
                 }
-                const doc = await res.json();
-                console.log('Uploaded document:', doc);
+
+                console.log('Uploaded document:', data);
             } catch (e) {
                 alert(`Upload failed: ${e.message}`);
             }
@@ -244,7 +274,7 @@ class App {
                 headers: this.getAuthHeaders()
             });
             if (res.ok) {
-                this.documents = await res.json();
+                this.documents = await this.safeJson(res);
                 this.renderDocumentsTable();
                 this.updateDocumentSelectors();
             }
@@ -340,11 +370,10 @@ class App {
                 })
             });
 
+            const data = await this.safeJson(res);
             if (!res.ok) {
-                throw new Error('Failed to fetch response');
+                throw new Error(data.detail || 'Chat request failed');
             }
-
-            const data = await res.json();
 
             let citationsHtml = '';
             if (data.citations && data.citations.length) {
@@ -388,7 +417,9 @@ class App {
                 body: JSON.stringify({ document_ids: docIds })
             });
 
-            const data = await res.json();
+            const data = await this.safeJson(res);
+            if (!res.ok) throw new Error(data.detail || 'Comparison failed');
+
             document.getElementById('comparison-results').classList.remove('hidden');
 
             const wrapper = document.getElementById('comparison-table-wrapper');
@@ -431,7 +462,9 @@ class App {
                 body: JSON.stringify({ document_id: docId, summary_type: summaryType })
             });
 
-            const data = await res.json();
+            const data = await this.safeJson(res);
+            if (!res.ok) throw new Error(data.detail || 'Summary generation failed');
+
             document.getElementById('summary-results').classList.remove('hidden');
             const card = document.getElementById('summary-content-card');
 
@@ -461,7 +494,9 @@ class App {
                 body: JSON.stringify({ text: text })
             });
 
-            const data = await res.json();
+            const data = await this.safeJson(res);
+            if (!res.ok) throw new Error(data.detail || 'Classification failed');
+
             document.getElementById('classify-results').classList.remove('hidden');
             document.getElementById('pred-cat').innerText = data.predicted_category;
             document.getElementById('pred-conf').innerText = `${(data.confidence * 100).toFixed(1)}%`;
@@ -489,7 +524,7 @@ class App {
                 headers: this.getAuthHeaders()
             });
             if (res.ok) {
-                const data = await res.json();
+                const data = await this.safeJson(res);
                 document.getElementById('metric-docs').innerText = data.metrics.total_documents;
                 document.getElementById('metric-chunks').innerText = data.metrics.total_chunks;
                 document.getElementById('metric-pages').innerText = data.metrics.total_pages_processed;
