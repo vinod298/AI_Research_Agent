@@ -2,8 +2,6 @@
  * Enterprise AI Research & Knowledge Assistant - Frontend App Controller
  */
 
-const API_BASE = window.API_BASE_URL || localStorage.getItem('api_base_url') || '/api/v1';
-
 class App {
     constructor() {
         this.documents = [];
@@ -20,20 +18,56 @@ class App {
         this.refreshData();
     }
 
+    getApiBaseUrl() {
+        let customUrl = localStorage.getItem('api_base_url');
+        if (customUrl) {
+            customUrl = customUrl.trim().replace(/\/+$/, '');
+            if (!customUrl.endsWith('/api/v1')) {
+                customUrl = `${customUrl}/api/v1`;
+            }
+            return customUrl;
+        }
+        return window.API_BASE_URL || '/api/v1';
+    }
+
+    configureApiUrl() {
+        const current = localStorage.getItem('api_base_url') || 'http://localhost:8000';
+        const url = prompt(
+            "Enter your live Backend API URL:\n\nExamples:\n- Cloudflare Tunnel: https://your-name.trycloudflare.com\n- Hugging Face: https://your-space.hf.space\n- Render: https://your-app.onrender.com\n- Local: http://localhost:8000",
+            current
+        );
+
+        if (url !== null) {
+            const cleanUrl = url.trim().replace(/\/+$/, '');
+            if (cleanUrl) {
+                localStorage.setItem('api_base_url', cleanUrl);
+                alert(`Backend API URL updated to:\n${cleanUrl}\n\nTesting connection now...`);
+            } else {
+                localStorage.removeItem('api_base_url');
+                alert("Reset to default relative API (/api/v1)");
+            }
+            this.refreshData();
+        }
+    }
+
     async safeJson(res) {
         const text = await res.text();
         if (!text || !text.trim()) return {};
+
         try {
             return JSON.parse(text);
         } catch (e) {
+            const currentBackend = this.getApiBaseUrl();
+            if (res.status === 404 || text.includes('<!DOCTYPE html>') || text.includes('<html')) {
+                throw new Error(
+                    `Backend API unreachable at '${currentBackend}'.\n\nPlease click the '⚙️ API Server' button in the header to set your live Backend URL (e.g. Cloudflare Tunnel, Hugging Face, or http://localhost:8000).`
+                );
+            }
             if (res.status === 401) {
                 this.token = null;
                 localStorage.removeItem('jwt_token');
                 this.checkAuthStatus();
                 throw new Error('Authentication required. Please log in or register first.');
-            }
-            if (res.status === 404) {
-                throw new Error(`API endpoint not found (404). Ensure your backend API server is running.`);
             }
             if (res.status >= 500) {
                 throw new Error(`Backend server error (${res.status}). Please check your server logs.`);
@@ -84,7 +118,7 @@ class App {
         bodyData.append('password', passwordInput);
 
         try {
-            const res = await fetch(`${API_BASE}/auth/login`, {
+            const res = await fetch(`${this.getApiBaseUrl()}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: bodyData
@@ -118,7 +152,7 @@ class App {
         const password = document.getElementById('reg-password').value;
 
         try {
-            const res = await fetch(`${API_BASE}/auth/register`, {
+            const res = await fetch(`${this.getApiBaseUrl()}/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -243,7 +277,7 @@ class App {
             formData.append('file', file);
 
             try {
-                const res = await fetch(`${API_BASE}/documents/upload`, {
+                const res = await fetch(`${this.getApiBaseUrl()}/documents/upload`, {
                     method: 'POST',
                     headers: this.getAuthHeaders(),
                     body: formData
@@ -270,7 +304,7 @@ class App {
         if (btn) btn.classList.add('spin');
 
         try {
-            const res = await fetch(`${API_BASE}/documents`, {
+            const res = await fetch(`${this.getApiBaseUrl()}/documents`, {
                 headers: this.getAuthHeaders()
             });
             if (res.ok) {
@@ -332,7 +366,7 @@ class App {
     async deleteDocument(id) {
         if (!confirm('Are you sure you want to delete this document?')) return;
         try {
-            await fetch(`${API_BASE}/documents/${id}`, {
+            await fetch(`${this.getApiBaseUrl()}/documents/${id}`, {
                 method: 'DELETE',
                 headers: this.getAuthHeaders()
             });
@@ -360,7 +394,7 @@ class App {
         msgContainer.scrollTop = msgContainer.scrollHeight;
 
         try {
-            const res = await fetch(`${API_BASE}/chat`, {
+            const res = await fetch(`${this.getApiBaseUrl()}/chat`, {
                 method: 'POST',
                 headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({
@@ -411,7 +445,7 @@ class App {
         }
 
         try {
-            const res = await fetch(`${API_BASE}/compare`, {
+            const res = await fetch(`${this.getApiBaseUrl()}/compare`, {
                 method: 'POST',
                 headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ document_ids: docIds })
@@ -456,7 +490,7 @@ class App {
         }
 
         try {
-            const res = await fetch(`${API_BASE}/summarize`, {
+            const res = await fetch(`${this.getApiBaseUrl()}/summarize`, {
                 method: 'POST',
                 headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ document_id: docId, summary_type: summaryType })
@@ -488,7 +522,7 @@ class App {
         }
 
         try {
-            const res = await fetch(`${API_BASE}/classify`, {
+            const res = await fetch(`${this.getApiBaseUrl()}/classify`, {
                 method: 'POST',
                 headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ text: text })
@@ -520,7 +554,7 @@ class App {
 
     async loadAnalytics() {
         try {
-            const res = await fetch(`${API_BASE}/analytics`, {
+            const res = await fetch(`${this.getApiBaseUrl()}/analytics`, {
                 headers: this.getAuthHeaders()
             });
             if (res.ok) {

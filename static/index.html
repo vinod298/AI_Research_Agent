@@ -61,8 +61,10 @@
                 <span>OR</span>
             </div>
             <button class="btn btn-secondary" style="width: 100%;" onclick="app.continueAsGuest()">⚡ Continue as Guest (Demo Mode)</button>
+            <button class="btn btn-secondary mt-2" style="width: 100%; font-size: 0.85rem;" onclick="app.configureApiUrl()">⚙️ Set Backend API URL</button>
         </div>
     </div>
+
 
     <!-- MAIN APP CONTAINER -->
     <div class="app-container">
@@ -115,9 +117,11 @@
                 </div>
                 <div class="header-actions">
                     <span id="user-badge" class="badge badge-provider">User: Guest</span>
+                    <button class="btn btn-secondary" onclick="app.configureApiUrl()">⚙️ API Server</button>
                     <button class="btn btn-secondary" id="refresh-btn" onclick="app.refreshData()">🔄 Refresh</button>
                     <button class="btn btn-secondary" onclick="app.logout()">Sign Out</button>
                 </div>
+
             </header>
 
             <!-- TAB 1: DOCUMENTS -->
