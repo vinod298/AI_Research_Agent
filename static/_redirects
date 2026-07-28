@@ -1,0 +1,5 @@
+# Cloudflare Pages Proxy Rule
+# Redirects all frontend /api/* requests to your actual API backend URL
+# Replace YOUR-BACKEND-URL.com with your live backend domain or Cloudflare Tunnel URL
+
+/api/*  https://YOUR-BACKEND-URL.com/api/:splat  200
