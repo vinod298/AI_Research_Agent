@@ -51,6 +51,16 @@ services:
     volumes:
       - qdrant_storage:/qdrant/storage
 
+  # Cloudflare Tunnel for 100% Free Instant Public Publishing
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: enterprise_ai_tunnel
+    restart: unless-stopped
+    command: tunnel --url http://app:8000
+    depends_on:
+      - app
+
 volumes:
   postgres_data:
   qdrant_storage:
+
