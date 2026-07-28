@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise AI Research & Knowledge Assistant</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- AUTH OVERLAY / MODAL -->
+    <div id="auth-modal" class="auth-modal-overlay">
+        <div class="auth-card card">
+            <div class="auth-header">
+                <div class="logo-icon" style="font-size: 2.5rem; text-align: center;">✨</div>
+                <h2>Enterprise AI Assistant</h2>
+                <p class="subtitle" style="text-align: center;">Sign in or create an account to access RAG suite</p>
+            </div>
+
+            <div class="auth-tabs">
+                <button class="auth-tab-btn active" id="btn-show-login" onclick="app.showAuthTab('login')">Sign In</button>
+                <button class="auth-tab-btn" id="btn-show-register" onclick="app.showAuthTab('register')">Register Account</button>
+            </div>
+
+            <!-- LOGIN FORM -->
+            <form id="login-form" onsubmit="app.handleLogin(event)">
+                <div class="form-group mt-3">
+                    <label>Username or Email</label>
+                    <input type="text" id="login-username" class="form-control" required placeholder="Enter username or email">
+                </div>
+                <div class="form-group mt-3">
+                    <label>Password</label>
+                    <input type="password" id="login-password" class="form-control" required placeholder="Enter password">
+                </div>
+                <button type="submit" class="btn btn-primary mt-4" style="width: 100%;">Sign In</button>
+            </form>
+
+            <!-- REGISTER FORM -->
+            <form id="register-form" class="hidden" onsubmit="app.handleRegister(event)">
+                <div class="form-group mt-3">
+                    <label>Full Name</label>
+                    <input type="text" id="reg-fullname" class="form-control" required placeholder="Dr. Alex Vance">
+                </div>
+                <div class="form-group mt-3">
+                    <label>Email Address</label>
+                    <input type="email" id="reg-email" class="form-control" required placeholder="alex@enterprise.ai">
+                </div>
+                <div class="form-group mt-3">
+                    <label>Username</label>
+                    <input type="text" id="reg-username" class="form-control" required placeholder="alex_vance">
+                </div>
+                <div class="form-group mt-3">
+                    <label>Password</label>
+                    <input type="password" id="reg-password" class="form-control" required placeholder="Min 6 characters">
+                </div>
+                <button type="submit" class="btn btn-primary mt-4" style="width: 100%;">Create Enterprise Account</button>
+            </form>
+
+            <div class="guest-divider">
+                <span>OR</span>
+            </div>
+            <button class="btn btn-secondary" style="width: 100%;" onclick="app.continueAsGuest()">⚡ Continue as Guest (Demo Mode)</button>
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTAINER -->
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="logo-icon">✨</div>
+                <div>
+                    <h2>Enterprise AI</h2>
+                    <span class="subtitle">Research & RAG Suite</span>
+                </div>
+            </div>
+
+            <nav class="nav-menu">
+                <button class="nav-btn active" data-tab="tab-documents">
+                    <span class="icon">📁</span> Documents
+                </button>
+                <button class="nav-btn" data-tab="tab-chat">
+                    <span class="icon">💬</span> RAG Chat & Citations
+                </button>
+                <button class="nav-btn" data-tab="tab-compare">
+                    <span class="icon">⚖️</span> Document Comparison
+                </button>
+                <button class="nav-btn" data-tab="tab-summarize">
+                    <span class="icon">📝</span> Summarizer
+                </button>
+                <button class="nav-btn" data-tab="tab-classify">
+                    <span class="icon">🏷️</span> TensorFlow Classifier
+                </button>
+                <button class="nav-btn" data-tab="tab-analytics">
+                    <span class="icon">📊</span> Analytics & Health
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="status-indicator">
+                    <span class="pulse-dot"></span>
+                    <span>System Ready (TF & Qdrant Active)</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="top-header">
+                <div class="header-title">
+                    <h1 id="page-title">Document Management</h1>
+                    <p class="header-subtitle">Ingest, index, and analyze enterprise research PDFs</p>
+                </div>
+                <div class="header-actions">
+                    <span id="user-badge" class="badge badge-provider">User: Guest</span>
+                    <button class="btn btn-secondary" id="refresh-btn" onclick="app.refreshData()">🔄 Refresh</button>
+                    <button class="btn btn-secondary" onclick="app.logout()">Sign Out</button>
+                </div>
+            </header>
+
+            <!-- TAB 1: DOCUMENTS -->
+            <section id="tab-documents" class="tab-pane active">
+                <div class="upload-card">
+                    <div class="drop-zone" id="drop-zone">
+                        <div class="drop-icon">📤</div>
+                        <h3>Upload Any Research Documents & Files</h3>
+                        <p>Drag & drop PDFs, Word docs (.docx), Text (.txt), Markdown (.md), Code, JSON, CSV or any file type (Max 50MB)</p>
+                        <input type="file" id="file-input" accept="*/*" multiple hidden>
+                        <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">Select Files</button>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h3>Uploaded Research Documents</h3>
+                        <span class="doc-count-badge" id="doc-count">0 Documents</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Title / Filename</th>
+                                    <th>Pages</th>
+                                    <th>Chunks</th>
+                                    <th>TF Category</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="documents-table-body">
+                                <tr>
+                                    <td colspan="6" class="text-center">No documents uploaded yet. Upload a PDF to begin research.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: RAG CHAT -->
+            <section id="tab-chat" class="tab-pane">
+                <div class="chat-layout">
+                    <div class="chat-main card">
+                        <div class="chat-header">
+                            <div>
+                                <h3>RAG Research Assistant</h3>
+                                <span class="text-muted">Strict Grounded RAG with Page Citations</span>
+                            </div>
+                            <div class="chat-controls">
+                                <select id="llm-provider-select" class="form-select">
+                                    <option value="mock">Mock LLM (Local Synthesizer)</option>
+                                    <option value="openai">OpenAI GPT-4o</option>
+                                    <option value="anthropic">Claude 3.5 Sonnet</option>
+                                    <option value="gemini">Google Gemini 1.5</option>
+                                    <option value="ollama">Local Ollama Llama3</option>
+                                    <option value="deepseek">DeepSeek Chat</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="chat-messages" id="chat-messages">
+                            <div class="message assistant-message">
+                                <div class="msg-avatar">🤖</div>
+                                <div class="msg-content">
+                                    <p>Hello! I am your Enterprise AI Research Assistant. Ask any question about your uploaded PDF documents and I will provide context-grounded answers with exact inline page citations.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="chat-input-area">
+                            <input type="text" id="chat-input" placeholder="Ask a research question (e.g. What is the proposed architecture and performance results?)...">
+                            <button class="btn btn-primary" id="send-btn" onclick="app.sendChatMessage()">Send</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: COMPARISON -->
+            <section id="tab-compare" class="tab-pane">
+                <div class="card">
+                    <h3>Multi-Document Comparative Analysis Matrix</h3>
+                    <p class="text-muted">Select at least 2 documents to compare methodology, architecture, and results.</p>
+                    
+                    <div class="doc-selection-grid" id="compare-doc-selector">
+                        <!-- Checkboxes dynamically rendered -->
+                    </div>
+
+                    <button class="btn btn-primary mt-3" onclick="app.runDocumentComparison()">⚖️ Generate Comparison Matrix</button>
+                </div>
+
+                <div id="comparison-results" class="mt-4 hidden">
+                    <div class="card">
+                        <h3>Comparison Matrix Results</h3>
+                        <div id="comparison-table-wrapper" class="table-responsive"></div>
+                    </div>
+                    <div class="card mt-3">
+                        <h3>Synthesis & Conclusion</h3>
+                        <div id="comparison-narrative"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 4: SUMMARIZER -->
+            <section id="tab-summarize" class="tab-pane">
+                <div class="card">
+                    <h3>Document Summarization Engine</h3>
+                    <div class="form-group mt-3">
+                        <label>Select Document:</label>
+                        <select id="summarize-doc-select" class="form-select"></select>
+                    </div>
+                    <div class="form-group mt-3">
+                        <label>Summary Type:</label>
+                        <select id="summarize-type-select" class="form-select">
+                            <option value="all">Comprehensive (Executive, Technical, Detailed, Bullets)</option>
+                            <option value="executive">Executive Summary Only</option>
+                            <option value="technical">Technical & Architecture Only</option>
+                            <option value="bullet">Bullet Points & Key Takeaways</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary mt-3" onclick="app.generateSummary()">📝 Generate Summary</button>
+                </div>
+
+                <div id="summary-results" class="mt-4 hidden">
+                    <div class="card" id="summary-content-card"></div>
+                </div>
+            </section>
+
+            <!-- TAB 5: TENSORFLOW CLASSIFIER -->
+            <section id="tab-classify" class="tab-pane">
+                <div class="card">
+                    <h3>TensorFlow Neural Category Classifier</h3>
+                    <p class="text-muted">Classifies text into 10 enterprise domains (AI, ML, Cybersecurity, Cloud, CV, Robotics, NLP, Blockchain, IoT, Data Science).</p>
+                    
+                    <div class="form-group mt-3">
+                        <label>Enter Custom Technical Text or Abstract:</label>
+                        <textarea id="classify-text-input" rows="4" class="form-control" placeholder="Enter research text abstract to classify..."></textarea>
+                    </div>
+                    <button class="btn btn-primary mt-3" onclick="app.runClassification()">🏷️ Run TensorFlow Inference</button>
+                </div>
+
+                <div id="classify-results" class="mt-4 hidden">
+                    <div class="card">
+                        <h3>Prediction Results</h3>
+                        <div class="prediction-header">
+                            <div>Primary Category: <strong id="pred-cat" class="highlight-text"></strong></div>
+                            <div>Confidence: <span id="pred-conf" class="badge badge-success"></span></div>
+                        </div>
+                        <div class="progress-bars-container mt-3" id="scores-container"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 6: ANALYTICS -->
+            <section id="tab-analytics" class="tab-pane">
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-icon">📄</div>
+                        <div class="metric-val" id="metric-docs">0</div>
+                        <div class="metric-label">Total Documents</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon">🧩</div>
+                        <div class="metric-val" id="metric-chunks">0</div>
+                        <div class="metric-label">Vector Chunks</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon">📖</div>
+                        <div class="metric-val" id="metric-pages">0</div>
+                        <div class="metric-label">Pages Processed</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon">⚡</div>
+                        <div class="metric-val" id="metric-latency">0 ms</div>
+                        <div class="metric-label">Avg Query Latency</div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <h3>System Subsystems Status</h3>
+                    <div class="status-grid">
+                        <div class="status-box">
+                            <span class="status-dot green"></span>
+                            <div><strong>Database:</strong> PostgreSQL / SQLite Async</div>
+                        </div>
+                        <div class="status-box">
+                            <span class="status-dot green"></span>
+                            <div><strong>Vector DB:</strong> Qdrant Engine Active</div>
+                        </div>
+                        <div class="status-box">
+                            <span class="status-dot green"></span>
+                            <div><strong>Embeddings:</strong> SentenceTransformers (384-d)</div>
+                        </div>
+                        <div class="status-box">
+                            <span class="status-dot green"></span>
+                            <div><strong>Classifier:</strong> TensorFlow 2.x Keras Model</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

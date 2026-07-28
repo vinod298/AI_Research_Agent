@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "enterprise-ai-assistant"
+version = "1.0.0"
+description = "Enterprise AI Research & Knowledge Assistant with RAG, Qdrant, and TensorFlow Document Classifier"
+authors = [{name = "Enterprise AI Architecture Team"}]
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "pydantic>=2.6.0",
+    "pydantic-settings>=2.1.0",
+    "sqlalchemy>=2.0.25",
+    "asyncpg>=0.29.0",
+    "aiosqlite>=0.19.0",
+    "redis>=5.0.1",
+    "qdrant-client>=1.7.3",
+    "sentence-transformers>=2.3.1",
+    "tensorflow>=2.15.0",
+    "pymupdf>=1.23.21",
+    "pdfplumber>=0.10.4",
+    "pypdf>=4.0.1",
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+    "loguru>=0.7.2"
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = "test_*.py"

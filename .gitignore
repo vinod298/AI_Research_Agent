@@ -1,0 +1,66 @@
+# Environment variables & secrets
+.env
+.env.*
+!.env.example
+*.env
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Databases & local persistence
+*.db
+*.sqlite
+*.sqlite3
+ai_research.db
+
+# TensorFlow & ML Model Artifacts / Weights
+*.h5
+*.keras
+*.pb
+*.tflite
+saved_model/
+model_weights/
+checkpoints/
+.keras/
+
+# Application Logs & Uploaded Data
+logs/
+*.log
+data/uploads/
+data/raw/
+data/processed/
+data/qdrant/
+qdrant_storage/
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
